@@ -8,8 +8,10 @@ class DiffDetection:
         return "la"
 
     def differ(self, mat1, mat2, threshValue):
-        mat1Gray = cv.cvtColor(mat1,cv.COLOR_BGR2GRAY)
-        mat2Gray = cv.cvtColor(mat2,cv.COLOR_BGR2GRAY)
+        #mat1Gray = cv.cvtColor(mat1,cv.COLOR_BGR2GRAY)
+        #mat2Gray = cv.cvtColor(mat2,cv.COLOR_BGR2GRAY)
+        mat1Gray = mat1[:,:,2].copy()
+        mat2Gray = mat2[:,:,2].copy()
         matDiff = cv.absdiff(mat1Gray, mat2Gray)
         (retval, thresh) = cv.threshold(matDiff,threshValue, 255, cv.THRESH_BINARY);
 

@@ -23,7 +23,7 @@ class Detection:
 
     # from https://picamera.readthedocs.io/en/release-1.13/recipes1.html#capturing-consistent-images
     # Set ISO to the desired value
-    camera.iso = 100
+    camera.iso = 400
     # Wait for the automatic gain control to settle
     time.sleep(2)
     # Now fix the values
@@ -46,24 +46,26 @@ class Detection:
       camera.capture(rawCapture, format="bgr")
       self.newImg = rawCapture.array
       delta = .0
+      time.sleep(2)
       ts = time.time()
       if i > 1:
         if self.oldImg is None:
           print "old img is nore more"
         if self.newImg is None:
           print "new img is nore more"
-        (diff, delta) = self.dd.differ(self.oldImg, self.newImg)
+        (diff, delta) = self.dd.differ(self.oldImg, self.newImg,10)
       else:
         continue
       if delta > 0.05:
         baseString = 'capture_'+str(ts)
-        cv.imwrite(baseString+'_00_before.png', self.oldImg)
-        cv.imwrite(baseString+'_01_after.png', self.newImg)
+        cv.imwrite(baseString+'_00_before.png', self.oldImg[:,:,2])
+        cv.imwrite(baseString+'_01_after.png', self.newImg[:,:,2])
         cv.imwrite(baseString+'_02_diff.png', diff)
       print 'Diff image at time ' + str(ts) + ' had ' + str(delta*100.) + '%'
 
 
 
 if __name__ == "__main__":
-    d = Detection()
-    d.run()
+    while True:
+        d = Detection(1000)
+        d.run()
