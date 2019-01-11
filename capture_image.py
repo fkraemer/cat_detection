@@ -53,7 +53,7 @@ class Detection:
 	            else:
 	                continue
 	            timeStr = time.strftime('%y_%m_%d_%H_%M_%S')
-	            if delta > 0.05:
+	            if delta > 0.04 and delta < 0.18:
 	                cv.imwrite('door_' + timeStr + '_00_before.png', self.oldImg[:,:,2])
 	                cv.imwrite('door_' + timeStr + '_01_after.png', self.newImg[:,:,2])
 	                cv.imwrite('door_' + timeStr + '_02_diff.png', diff)
