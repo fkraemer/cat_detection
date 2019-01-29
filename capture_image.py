@@ -5,7 +5,7 @@ import time
 import cv2 as cv
 import numpy as np
 
-from cat_dection import DiffDetection
+from cat_detection import DiffDetection
 
 
 class Detection: 
