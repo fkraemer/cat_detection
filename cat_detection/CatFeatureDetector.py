@@ -5,9 +5,9 @@ import numpy as np
 class CatFeatureDetector:
 
 
-    def _statisticsFeatures(self, diffBild):
+    def _statisticsFeatures(self, diffImg):
         computeForRegionsN = 3
-        image, contours, hierarchy = cv.findContours(diffBild, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+        image, contours, hierarchy = cv.findContours(diffImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
         #sort contours to only get the biggest ones
         list.sort(contours, key=len, reverse = True)
         #compute moments for biggest x regions
@@ -27,10 +27,33 @@ class CatFeatureDetector:
             returnArray[i,:] = np.zeros((1,featureCnt))
         return returnArray
 
+    def _boundaryChangedFeatures(self, diffImg):
+        boundary = .125
+        height = np.size(diffImg,0)
+        width = np.size(diffImg,1)
+        heightBoundaryPx = int(boundary * height)
+        heightBoundaryRegionCount = heightBoundaryPx * width
+        widthBoundaryPx = int(boundary * width)
+        widthBoundaryRegionCount = widthBoundaryPx * height
+
+        upperRegionChanged = np.count_nonzero(diffImg[0:heightBoundaryPx,:]) / float(heightBoundaryRegionCount)
+        lowerRegionChanged = np.count_nonzero(diffImg[-heightBoundaryPx:height,:]) / float(heightBoundaryRegionCount)
+        leftRegionChanged = np.count_nonzero(diffImg[:,0:widthBoundaryPx]) / float(widthBoundaryRegionCount)
+        rightRegionChanged = np.count_nonzero(diffImg[:,-widthBoundaryPx:width]) / float(widthBoundaryRegionCount)
+
+        return np.asarray([upperRegionChanged, lowerRegionChanged, leftRegionChanged, rightRegionChanged])
+
+    # def _colorFeaturesChangedRegions(self, diffImg, beforeImg, afterImg):
+    #     changedIdx = np.nonzero(diffImg)
+    #     colorDiffImg = beforeImg - afterImg
+    #     changedPx = colorDiffImg[changedIdx]
+
 
     def features(self):
         #aggregate
         aggregatedFeatures = self._statisticsFeatures(self._imgDiff).flatten()
+        aggregatedFeatures = np.hstack((aggregatedFeatures, self._boundaryChangedFeatures(self._imgDiff)))
+      #  aggregatedFeatures = np.hstack((aggregatedFeatures, self._colorFeaturesChangedRegions(self._imgDiff)))
 
         #return
         return aggregatedFeatures
