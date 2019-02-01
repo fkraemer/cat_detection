@@ -28,7 +28,7 @@ class CatFeatureDetector:
         return returnArray
 
     def _boundaryChangedFeatures(self, diffImg):
-        boundary = .125
+        boundary = .2
         height = np.size(diffImg,0)
         width = np.size(diffImg,1)
         heightBoundaryPx = int(boundary * height)
@@ -40,20 +40,26 @@ class CatFeatureDetector:
         lowerRegionChanged = np.count_nonzero(diffImg[-heightBoundaryPx:height,:]) / float(heightBoundaryRegionCount)
         leftRegionChanged = np.count_nonzero(diffImg[:,0:widthBoundaryPx]) / float(widthBoundaryRegionCount)
         rightRegionChanged = np.count_nonzero(diffImg[:,-widthBoundaryPx:width]) / float(widthBoundaryRegionCount)
+        centralRegionChanged = np.count_nonzero(diffImg[heightBoundaryPx:-heightBoundaryPx,widthBoundaryPx:-widthBoundaryPx]) / float( (height-2*heightBoundaryPx)*(width-2*widthBoundaryPx) )
 
-        return np.asarray([upperRegionChanged, lowerRegionChanged, leftRegionChanged, rightRegionChanged])
+        return np.asarray([upperRegionChanged, lowerRegionChanged, leftRegionChanged, rightRegionChanged, centralRegionChanged])
 
-    # def _colorFeaturesChangedRegions(self, diffImg, beforeImg, afterImg):
-    #     changedIdx = np.nonzero(diffImg)
-    #     colorDiffImg = beforeImg - afterImg
-    #     changedPx = colorDiffImg[changedIdx]
+    def _colorFeaturesChangedRegions(self, diffImg, beforeImg, afterImg):
+        changedIdx = np.nonzero(diffImg)
+        colorDiffImg = (np.copy(beforeImg)/2).astype(np.int8)
+        colorDiffImg = colorDiffImg - afterImg/2
+        changedPx = colorDiffImg[changedIdx]
+        hist, binEdges = np.histogram(changedPx,bins=range(-125,150,25))
+        hist = hist.astype(np.float) / len(changedPx)
+        return np.asarray(hist)
 
 
     def features(self):
         #aggregate
-        aggregatedFeatures = self._statisticsFeatures(self._imgDiff).flatten()
+        aggregatedFeatures = np.asarray([])
+        #aggregatedFeatures = np.hstack((aggregatedFeatures, self._statisticsFeatures(self._imgDiff).flatten()) )
         aggregatedFeatures = np.hstack((aggregatedFeatures, self._boundaryChangedFeatures(self._imgDiff)))
-      #  aggregatedFeatures = np.hstack((aggregatedFeatures, self._colorFeaturesChangedRegions(self._imgDiff)))
+        aggregatedFeatures = np.hstack((aggregatedFeatures, self._colorFeaturesChangedRegions(self._imgBefore, self._imgAfter, self._imgDiff)))
 
         #return
         return aggregatedFeatures

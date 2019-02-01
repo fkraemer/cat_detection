@@ -14,11 +14,15 @@ class CatDetector:
     def __init__(self, trainingSetPositive, trainingSetNegative):
         self._positives = np.array([])
         self._negatives = np.array([])
+        self._positiveFileNames = list()
+        self._negativeFileNames = list()
         for catPicSet in trainingSetPositive:
+            self._negativeFileNames.append(catPicSet._imgBeforePath)
             detector = catPicSet.getFeatureDetector()
             featureArray = detector.features()
             self._positives = featureArray if np.size(self._positives,0) is 0  else np.vstack((self._positives, featureArray ) )
         for catPicSet in trainingSetNegative:
+            self._positiveFileNames.append(catPicSet._imgBeforePath)
             detector = catPicSet.getFeatureDetector()
             featureArray = detector.features()
             self._negatives = featureArray if np.size(self._negatives,0) is 0  else np.vstack((self._negatives, featureArray ) )
@@ -28,29 +32,32 @@ class CatDetector:
         negativeSamplesN = np.size(self._negatives,0)
         labels = np.vstack((np.zeros((negativeSamplesN,1)), np.ones((positiveSamplesN,1)) ) )
         features = np.vstack( (self._negatives, self._positives) )
-        self._train_x, self._test_x, self._train_y, self._test_y = train_test_split(features, labels, train_size=trainTestSplit, random_state=1)    # Train and Test dataset size details
+        self._train_x, self._test_x, self._train_y, self._test_y, self._fileNames_x, self._fileName_y = train_test_split(features, labels, self._negativeFileNames+self._positiveFileNames, train_size=trainTestSplit, random_state=1)    # Train and Test dataset size details
         print "Train_x Shape :: ", self._train_x.shape
         print "Train_y Shape :: ", self._train_y.shape
         print "Test_x Shape :: ", self._test_x.shape
         print "Test_y Shape :: ", self._test_y.shape
-        self._clf = RandomForestClassifier(random_state=1)
+        self._clf = RandomForestClassifier(random_state=1, n_estimators=50)
         self._clf.fit(self._train_x, self._train_y.flatten())
         print "Trained model :: ", self._clf
 
     def test(self):
         self._predictions = self._clf.predict(self._test_x)
+        wrongPredictions = np.argwhere(self._test_y.squeeze() != self._predictions)
+        if (len(wrongPredictions > 0) ):
+            print "Wrong predictions:\n", [self._fileName_y[i] for i in wrongPredictions[0,:]]
 
         print "Train Accuracy : ", accuracy_score(self._train_y, self._clf.predict(self._train_x))
         print "Test Accuracy  : ", accuracy_score(self._test_y, self._predictions)
         print " Confusion matrix ", confusion_matrix(self._test_y, self._predictions)
 
 
-    def evalFalsePositives(self): # how often did we predict a cat, when there was none
-        cm = confusion_matrix(self._test_y, self._predictions) # y is true label, x is prediction
+    def evalFalsePositives(self): # how often did we predict a cat, when there was none, out of all positive predictions
+        cm = confusion_matrix( self._predictions, self._test_y) # y is true label, x is prediction
         return cm[0,1] / float(cm[0,1] + cm[1,1])
 
     def evalFalseNegatives(self): # how often did we predict no cat, when there was one
-        cm = confusion_matrix(self._test_y, self._predictions) # y is true label, x is prediction
+        cm = confusion_matrix( self._predictions,self._test_y) # y is true label, x is prediction
         return cm[1,0] / float(cm[0,0] + cm[1,0])
 
 
@@ -81,12 +88,12 @@ class test(unittest.TestCase):
                     beforeFilename = prefix + '00_before.png'
                     afterFilename = prefix + '01_after.png'
                     if os.path.isfile(path + "/" + beforeFilename) and os.path.isfile(path + "/" + beforeFilename):
-                        picSets.append(CatPicSet(path + "/" + beforeFilename,
-                                                 path + "/" + afterFilename,
-                                                 path + "/" + filename))
+                        picSets.append(CatPicSet(path + beforeFilename,
+                                                 path + afterFilename,
+                                                 path + filename))
         return picSets
 
-    def testTrainAndClassify(self):
+    def trainAndClassify(self, randomSeed):
         basePathPositives = '/home/flo/data/catpics/positive/'
         basePathNegatives = '/home/flo/data/catpics/negative/'
         picSetsPositive = self.setAggregator(basePathPositives)
@@ -98,7 +105,7 @@ class test(unittest.TestCase):
         print 'Balancing. Using %d from each set. %d for training' % ( equalSetN, trainingN )
 
         #shuffle the list and split into training/test sets
-        random.seed(2)
+        random.seed(randomSeed)
         random.shuffle(picSetsPositive)
         random.shuffle(picSetsNegatives)
 
@@ -112,4 +119,15 @@ class test(unittest.TestCase):
         print 'false negative score is %f' % (falseNegativeScore*100.,)
 
         self.assertLess(falsePositiveScore,0.1)
-        self.assertLess(falseNegativeScore,0.5)
+        self.assertLess(falseNegativeScore,0.3)
+
+    def testTrainAndClassifyZero(self):
+        self.trainAndClassify(0)
+    def testTrainAndClassifyOne(self):
+        self.trainAndClassify(1)
+    def testTrainAndClassifyTwo(self):
+        self.trainAndClassify(2)
+    def testTrainAndClassifyThree(self):
+        self.trainAndClassify(3)
+    def testTrainAndClassifyFour(self):
+        self.trainAndClassify(4)
