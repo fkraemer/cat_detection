@@ -37,12 +37,14 @@ class Detection:
 
 
             i=0
+            
             # allow the camera to warmup
             time.sleep(0.1)
             while i < self.iterations:
 	            i = i + 1
 	            self.oldImg = self.newImg.copy()
 	            # grab an image from the camera
+	            non_entrance = False
 	            rawCapture = PiRGBArray(camera)
 	            camera.capture(rawCapture, format="bgr")
 	            self.newImg = rawCapture.array
@@ -50,14 +52,16 @@ class Detection:
 	            time.sleep(2)
 	            if i > 1:
 	                (diff, delta) = self.dd.differ(self.oldImg, self.newImg,10)
+	                EntranceChange = (np.count_nonzero(diff[1,:])+np.count_nonzero(diff[-1,:])) 
+	                noEntranceChange = EntranceChange  < 50
 	            else:
 	                continue
 	            timeStr = time.strftime('%y_%m_%d_%H_%M_%S')
-	            if delta > 0.04 and delta < 0.18:
-	                cv.imwrite('door_' + timeStr + '_00_before.png', self.oldImg[:,:,2])
-	                cv.imwrite('door_' + timeStr + '_01_after.png', self.newImg[:,:,2])
-	                cv.imwrite('door_' + timeStr + '_02_diff.png', diff)
-	            print 'Diff image at time ' + timeStr + ' had ' + str(delta*100.) + '%'
+	            if delta > 0.03 and delta < 0.18 and noEntranceChange:
+	                cv.imwrite('door_' +  timeStr + '_00_before.png', self.oldImg[:,:,2])
+	                cv.imwrite('door_' +  timeStr + '_01_after.png', self.newImg[:,:,2])
+	                cv.imwrite('door_' +  timeStr + '_02_diff.png', diff)
+	            print 'Diff image at time ' + timeStr + ' had ' + str(delta*100.) + '% entrance change: ' + str(EntranceChange)
         finally:
             camera.close()
 
@@ -65,5 +69,5 @@ class Detection:
 
 if __name__ == "__main__":
     while True:
-        d = Detection(10)
+        d = Detection(100)
         d.run()
