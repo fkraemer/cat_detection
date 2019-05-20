@@ -44,8 +44,9 @@ class CatDetector:
     def test(self):
         self._predictions = self._clf.predict(self._test_x)
         wrongPredictions = np.argwhere(self._test_y.squeeze() != self._predictions)
-        if (len(wrongPredictions > 0) ):
-            print "Wrong predictions:\n", [self._fileName_y[i] for i in wrongPredictions[0,:]]
+        if (len(wrongPredictions) > 0 ):
+            print "Wrong predictions (%d):\n%s" % (len(wrongPredictions), '\n'.join([self._fileName_y[idx] for idx in wrongPredictions[:,0]]))
+        return 0
 
         print "Train Accuracy : ", accuracy_score(self._train_y, self._clf.predict(self._train_x))
         print "Test Accuracy  : ", accuracy_score(self._test_y, self._predictions)

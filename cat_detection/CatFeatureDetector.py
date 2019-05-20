@@ -50,7 +50,7 @@ class CatFeatureDetector:
         colorDiffImg = colorDiffImg - afterImg/2
         changedPx = colorDiffImg[changedIdx]
         hist, binEdges = np.histogram(changedPx,bins=range(-125,150,25))
-        hist = hist.astype(np.float) / len(changedPx)
+        hist = hist.astype(np.float) / (len(changedPx)+0.0001)
         return np.asarray(hist)
 
 
